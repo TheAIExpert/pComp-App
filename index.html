@@ -1,0 +1,456 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The pComp App</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#03050f;--surface:#080d1c;--surface2:#0d1428;--border:#151e3a;
+  --border2:#1e2d55;--neon:#00f0ff;--neon2:#7b2fff;--neon3:#ff2d6e;
+  --neon4:#00ff9d;--text:#b8cce8;--dim:#3a4e72;--white:#e8f0ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(123,47,255,0.08) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.glow-orb-2{position:fixed;bottom:-200px;right:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(0,240,255,0.06) 0%,transparent 70%);pointer-events:none;z-index:0;}
+header{position:relative;z-index:10;padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.logo-area{display:flex;align-items:center;gap:14px;}
+.comp-logo{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;filter:drop-shadow(0 0 12px rgba(100,220,160,0.5));}
+.app-title{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(20px,4vw,32px);color:var(--white);letter-spacing:2px;text-shadow:0 0 30px rgba(0,240,255,0.4);}
+.app-title span{color:var(--neon);}
+.chain-badge{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--neon4);letter-spacing:2px;text-transform:uppercase;}
+.header-divider{position:relative;z-index:10;height:1px;margin:16px 24px;background:linear-gradient(90deg,transparent,var(--border2),var(--neon2) 50%,var(--border2),transparent);}
+.asset-nav{position:relative;z-index:10;padding:0 24px 20px;display:flex;gap:10px;flex-wrap:wrap;}
+.asset-btn{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 18px;cursor:pointer;font-family:'Orbitron',monospace;font-weight:600;font-size:13px;color:var(--dim);letter-spacing:1px;transition:all 0.2s;position:relative;overflow:hidden;}
+.asset-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,240,255,0.05),transparent);opacity:0;transition:opacity 0.2s;}
+.asset-btn:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 15px rgba(0,240,255,0.15);}
+.asset-btn:hover::before{opacity:1;}
+.asset-btn.active{border-color:var(--neon);color:var(--neon);background:rgba(0,240,255,0.06);box-shadow:0 0 20px rgba(0,240,255,0.2),inset 0 0 20px rgba(0,240,255,0.05);}
+.asset-btn.active::before{opacity:1;}
+.token-logo{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.token-logo.pdai{background:transparent;filter:drop-shadow(0 0 6px rgba(123,47,255,0.5));}
+.token-logo.ceth{background:linear-gradient(135deg,#627eea,#8a9ff5);box-shadow:0 0 8px rgba(98,126,234,0.5);color:#fff;font-size:10px;font-weight:900;}
+.token-logo.cwbtc{background:linear-gradient(135deg,#f7931a,#ffb84d);box-shadow:0 0 8px rgba(247,147,26,0.5);color:#fff;font-size:11px;font-weight:900;}
+#main-content{position:relative;z-index:10;padding:0 24px 40px;}
+.filter-bar{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:5px;}
+.filter-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;}
+.filter-input{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--neon);font-family:'DM Mono',monospace;font-size:12px;padding:7px 12px;width:160px;outline:none;transition:border-color 0.2s;}
+.filter-input:focus{border-color:var(--neon);box-shadow:0 0 10px rgba(0,240,255,0.1);}
+.filter-select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:7px 12px;outline:none;cursor:pointer;}
+.apply-btn{background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(123,47,255,0.15));border:1px solid var(--neon);border-radius:6px;color:var(--neon);font-family:'Orbitron',monospace;font-weight:600;font-size:11px;padding:8px 20px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;box-shadow:0 0 10px rgba(0,240,255,0.1);}
+.apply-btn:hover{background:linear-gradient(135deg,rgba(0,240,255,0.25),rgba(123,47,255,0.25));box-shadow:0 0 20px rgba(0,240,255,0.25);}
+.apply-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.preset-btns{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;}
+.preset-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-family:'DM Mono',monospace;font-size:10px;padding:7px 10px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.preset-btn:hover{border-color:var(--neon2);color:var(--neon2);}
+.status-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;min-height:20px;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0;}
+.status-dot.loading{background:var(--neon);box-shadow:0 0 8px var(--neon);animation:pulse 1s infinite;}
+.status-dot.done{background:var(--neon4);box-shadow:0 0 8px var(--neon4);}
+.status-dot.error{background:var(--neon3);box-shadow:0 0 8px var(--neon3);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+#status-text{font-size:11px;color:var(--dim);}
+.progress-bar{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden;max-width:200px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));width:0%;transition:width 0.3s;border-radius:2px;}
+.charts-grid{display:flex;flex-direction:column;gap:12px;}
+.chart-card{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 18px 14px;position:relative;overflow:hidden;}
+.chart-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--neon),transparent);opacity:0.6;}
+.chart-card-header{margin-bottom:4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.chart-card-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:600;color:var(--white);letter-spacing:1.5px;text-transform:uppercase;}
+.chart-card-sub{font-size:10px;color:var(--dim);letter-spacing:0.5px;}
+.chart-card canvas{max-height:180px;margin-top:10px;}
+#welcome{text-align:center;padding:80px 20px;}
+.welcome-icon{font-size:48px;margin-bottom:16px;opacity:0.4;}
+.welcome-title{font-family:'Orbitron',monospace;font-size:16px;color:var(--dim);margin-bottom:8px;letter-spacing:2px;}
+.welcome-sub{font-size:11px;color:var(--dim);opacity:0.6;}
+</style>
+</head>
+<body>
+<div class="glow-orb-2"></div>
+<header>
+  <div class="logo-area">
+    <div class="comp-logo">
+      <svg width="44" height="44" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="28" y="4" width="58" height="36" rx="8" fill="#6ee7b7" transform="skewY(-12)"/>
+        <rect x="14" y="38" width="58" height="36" rx="8" fill="#4ade80" transform="skewY(-12)"/>
+        <rect x="0" y="72" width="58" height="36" rx="8" fill="#86efac" transform="skewY(-12)"/>
+      </svg>
+    </div>
+    <div><div class="app-title">The <span>pComp</span> App</div></div>
+  </div>
+  <div class="chain-badge">Pulsechain</div>
+</header>
+<div class="header-divider"></div>
+<div class="asset-nav">
+  <button class="asset-btn" id="btn-pdai" onclick="selectAsset('pdai')">
+    <div class="token-logo pdai">
+      <svg width="26" height="26" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="pdaiGrad" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#4facfe"/>
+            <stop offset="45%" stop-color="#7b2fff"/>
+            <stop offset="100%" stop-color="#f5365c"/>
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="50" fill="url(#pdaiGrad)"/>
+        <path d="M30 22 L30 78 L52 78 C72 78 82 65 82 50 C82 35 72 22 52 22 Z" fill="none" stroke="white" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+        <rect x="25" y="22" width="9" height="56" rx="2" fill="white"/>
+        <rect x="24" y="41" width="55" height="7" rx="3" fill="url(#pdaiGrad)"/>
+        <rect x="24" y="41" width="10" height="7" fill="white"/>
+        <rect x="69" y="41" width="12" height="7" fill="white"/>
+        <rect x="24" y="53" width="55" height="7" rx="3" fill="url(#pdaiGrad)"/>
+        <rect x="24" y="53" width="10" height="7" fill="white"/>
+        <rect x="69" y="53" width="12" height="7" fill="white"/>
+      </svg>
+    </div>
+    <span style="color:#ffffff;">pDAI</span>
+  </button>
+  <button class="asset-btn" id="btn-ceth" onclick="selectAsset('ceth')">
+    <div class="token-logo ceth">Ξ</div>
+    <span style="color:#ffffff;">cETH</span>
+  </button>
+  <button class="asset-btn" id="btn-cwbtc" onclick="selectAsset('cwbtc')">
+    <div class="token-logo cwbtc">₿</div>
+    <span style="color:#ffffff;">cWBTC</span>
+  </button>
+</div>
+<div id="main-content">
+  <div id="welcome">
+    <div class="welcome-icon">◈</div>
+    <div class="welcome-title">Select an asset to begin</div>
+    <div class="welcome-sub">Click pDAI, cETH, or cWBTC above to load charts</div>
+  </div>
+  <div id="dashboard" style="display:none">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <div class="filter-label">Start Block</div>
+        <input class="filter-input" id="startBlock" type="number" value="17233000" oninput="validateStart(this)" />
+        <div id="startError" style="font-size:10px;color:#ff3c6e;min-height:14px;margin-top:2px;"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">End Block</div>
+        <input class="filter-input" id="endBlock" type="number" value="" placeholder="Current" />
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Data Points</div>
+        <select class="filter-select" id="stepSelect">
+          <option value="50">50 points</option>
+          <option value="100">100 points</option>
+          <option value="200">200 points</option>
+          <option value="500">500 points</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">&nbsp;</div>
+        <button class="apply-btn" id="applyBtn" onclick="loadCharts()">LOAD CHARTS</button>
+      </div>
+      <div class="preset-btns">
+        <button class="preset-btn" onclick="setPreset(17233000, null)">Full History</button>
+        <button class="preset-btn" onclick="setPreset(20000000, 21000000)">Jun 2024</button>
+        <button class="preset-btn" onclick="setPreset(23000000, null)">Recent</button>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <div id="status-text">Ready</div>
+      <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+    </div>
+    <div class="charts-grid" id="chartsGrid"></div>
+  </div>
+</div>
+
+<script>
+const RPC = "https://rpc.pulsechain.com";
+const PULSECHAIN_GENESIS = 17233000;
+
+const CONTRACTS = {
+  pdai: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
+  ceth: "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5",
+  cwbtc: "0xccF4429DB6322D5C611ee964527D42E5d685DD6a",
+};
+
+const WPLS_USDC_PAIR = "0x6753560538ECa67617A9Ce605178F788bE7E524E";
+const PDAI_WPLS_PAIR = "0xfC64556FAA683e6087F425819C7Ca3C558e13aC1";
+const CDAI_WPLS_PAIR = "0xF45362408BCd023a4Fb874588b5914a1c6DB0b71";
+
+const CHARTS_PDAI = [
+  { custom: 'price', pair: PDAI_WPLS_PAIR, token0isPLS: false, color: '#facc15', decimals: 18,label: 'pDAI Price USD',      sub: 'pDAI price in USD via PulseX pair' },
+  { custom: 'price', pair: CDAI_WPLS_PAIR, token0isPLS: false, color: '#f97316', label: 'cDAI Price USD',      sub: 'cDAI price in USD via PulseX pair' },
+  { sel: '0x3b1d21a2', color: '#00f0ff', decimals: 18, label: 'getCash()',             sub: 'Real pDAI liquidity sitting in the contract right now' },
+  { sel: '0x47bd3718', color: '#a78bfa', decimals: 18, label: 'Total Borrows',         sub: 'Total pDAI currently borrowed from the protocol' },
+  { sel: '0x8f840ddd', color: '#34d399', decimals: 18, label: 'Total Reserves',        sub: 'pDAI held as protocol reserves' },
+  { sel: '0x18160ddd', color: '#f472b6', decimals: 8,  label: 'cDAI Total Supply',     sub: 'Total cDAI tokens in existence' },
+  { sel: '0x182df0f5', color: '#fb923c', decimals: 28, label: 'Exchange Rate',         sub: 'cDAI to pDAI exchange rate stored' },
+  { sel: '0xf8f9da28', color: '#f43f5e', decimals: 9,  label: 'Borrow Rate Per Block', sub: 'Interest rate paid by borrowers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xae9d70b0', color: '#4ade80', decimals: 9,  label: 'Supply Rate Per Block', sub: 'Interest rate earned by suppliers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xaa5af0fd', color: '#fbbf24', decimals: 18, label: 'Borrow Index',          sub: 'Cumulative borrow interest index since inception' },
+  { sel: '0x173b9904', color: '#e879f9', decimals: 18, label: 'Reserve Factor',        sub: 'Fraction of interest kept as protocol reserves' },
+  { sel: '0x6c540baf', color: '#38bdf8', decimals: 0,  label: 'Accrual Block Number',  sub: 'Last block at which interest was accrued' },
+];
+
+const CHARTS_CETH = [
+  { sel: '0x3b1d21a2', color: '#00f0ff', decimals: 18, label: 'getCash()',             sub: 'Real PLS liquidity sitting in the cETH contract right now' },
+  { sel: '0x47bd3718', color: '#a78bfa', decimals: 18, label: 'Total Borrows',         sub: 'Total ETH currently borrowed from the protocol' },
+  { sel: '0x8f840ddd', color: '#34d399', decimals: 18, label: 'Total Reserves',        sub: 'ETH held as protocol reserves' },
+  { sel: '0x18160ddd', color: '#f472b6', decimals: 8,  label: 'cETH Total Supply',     sub: 'Total cETH tokens in existence' },
+  { sel: '0x182df0f5', color: '#fb923c', decimals: 28, label: 'Exchange Rate',         sub: 'cETH to ETH exchange rate stored' },
+  { sel: '0xf8f9da28', color: '#f43f5e', decimals: 9,  label: 'Borrow Rate Per Block', sub: 'Interest rate paid by borrowers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xae9d70b0', color: '#4ade80', decimals: 9,  label: 'Supply Rate Per Block', sub: 'Interest rate earned by suppliers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xaa5af0fd', color: '#fbbf24', decimals: 18, label: 'Borrow Index',          sub: 'Cumulative borrow interest index since inception' },
+  { sel: '0x173b9904', color: '#e879f9', decimals: 18, label: 'Reserve Factor',        sub: 'Fraction of interest kept as protocol reserves' },
+  { sel: '0x675d972c', color: '#818cf8', decimals: 18, label: 'Initial Exchange Rate', sub: 'Exchange rate set at contract deployment' },
+  { sel: '0x6c540baf', color: '#38bdf8', decimals: 0,  label: 'Accrual Block Number',  sub: 'Last block at which interest was accrued' },
+];
+
+// WBTC underlying has 8 decimals (not 18 like DAI/ETH), so getCash/totalBorrows/totalReserves
+// are scaled to 8, and exchangeRateStored uses the Compound scale 10^(10+underlyingDecimals) = 10^18.
+const CHARTS_CWBTC = [
+  { sel: '0x3b1d21a2', color: '#00f0ff', decimals: 8,  label: 'getCash()',             sub: 'Real WBTC liquidity sitting in the cWBTC contract right now' },
+  { sel: '0x47bd3718', color: '#a78bfa', decimals: 8,  label: 'Total Borrows',         sub: 'Total WBTC currently borrowed from the protocol' },
+  { sel: '0x8f840ddd', color: '#34d399', decimals: 8,  label: 'Total Reserves',        sub: 'WBTC held as protocol reserves' },
+  { sel: '0x18160ddd', color: '#f472b6', decimals: 8,  label: 'cWBTC Total Supply',    sub: 'Total cWBTC tokens in existence' },
+  { sel: '0x182df0f5', color: '#fb923c', decimals: 18, label: 'Exchange Rate',         sub: 'cWBTC to WBTC exchange rate stored' },
+  { sel: '0xf8f9da28', color: '#f43f5e', decimals: 9,  label: 'Borrow Rate Per Block', sub: 'Interest rate paid by borrowers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xae9d70b0', color: '#4ade80', decimals: 9,  label: 'Supply Rate Per Block', sub: 'Interest rate earned by suppliers each block (divide by 1,000,000,000 for raw rate)' },
+  { sel: '0xaa5af0fd', color: '#fbbf24', decimals: 18, label: 'Borrow Index',          sub: 'Cumulative borrow interest index since inception' },
+  { sel: '0x173b9904', color: '#e879f9', decimals: 18, label: 'Reserve Factor',        sub: 'Fraction of interest kept as protocol reserves' },
+  { sel: '0x675d972c', color: '#818cf8', decimals: 18, label: 'Initial Exchange Rate', sub: 'Exchange rate set at contract deployment' },
+  { sel: '0x6c540baf', color: '#38bdf8', decimals: 0,  label: 'Accrual Block Number',  sub: 'Last block at which interest was accrued' },
+];
+
+const ASSET_CHARTS = { pdai: CHARTS_PDAI, ceth: CHARTS_CETH, cwbtc: CHARTS_CWBTC };
+
+let chartObjs = {};
+let currentAsset = null;
+
+function $(id) { return document.getElementById(id); }
+
+function buildChartCards() {
+  const charts = ASSET_CHARTS[currentAsset];
+  const grid = $('chartsGrid');
+  grid.innerHTML = '';
+  charts.forEach((c, i) => {
+    const num = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬'][i] || (i+1);
+    grid.innerHTML += `
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-title" style="color:${c.color}">${num} ${c.label}</div>
+          <div class="chart-card-sub">${c.sub}</div>
+        </div>
+        <canvas id="chart_${i}"></canvas>
+      </div>`;
+  });
+}
+
+function setStatus(msg, state='') {
+  $('status-text').textContent = msg;
+  $('statusDot').className = 'status-dot'+(state?' '+state:'');
+}
+function setProgress(pct) { $('prog').style.width = pct+'%'; }
+
+async function rpc(method, params) {
+  const r = await fetch(RPC, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.result;
+}
+
+async function callAt(contract, selector, block) {
+  try {
+    const res = await rpc('eth_call',[{to:contract, data:selector},'0x'+block.toString(16)]);
+    if (!res || res==='0x') return 0n;
+    return BigInt(res);
+  } catch { return null; }
+}
+
+async function getReserves(pairAddress, block) {
+  try {
+    const res = await rpc('eth_call',[{to:pairAddress, data:'0x0902f1ac'},'0x'+block.toString(16)]);
+    if (!res || res==='0x' || res.length < 130) return null;
+    const r0 = Number(BigInt('0x'+res.slice(2,66)));
+    const r1 = Number(BigInt('0x'+res.slice(66,130)));
+    return { r0, r1 };
+  } catch { return null; }
+}
+
+async function getPLSUSD(block) {
+  const reserves = await getReserves(WPLS_USDC_PAIR, block);
+  if (!reserves) return null;
+  return (reserves.r1 / 1e6) / (reserves.r0 / 1e18);
+}
+
+async function getTokenUSDPrice(pairAddress, token0isPLS, block) {
+  try {
+    const [plsUSD, reserves] = await Promise.all([
+      getPLSUSD(block),
+      getReserves(pairAddress, block)
+    ]);
+    if (!plsUSD || !reserves) return null;
+    const { r0, r1 } = reserves;
+    if (token0isPLS) {
+      return ((r0 / 1e18) / (r1 / 1e18)) * plsUSD;
+    } else {
+      return ((r1 / 1e18) / (r0 / 1e18)) * plsUSD;
+    }
+  } catch { return null; }
+}
+
+function toFloat(raw, decimals) {
+  if (raw===null) return null;
+  return Number(raw) / Math.pow(10, decimals);
+}
+
+function fmt(v, decimals, decimals_display) {
+  if (v===null) return 'err';
+  if (decimals_display) return v.toFixed(decimals_display);
+  if (decimals===28) return v.toFixed(8);
+  if (v>=1e12) return (v/1e12).toFixed(3)+'T';
+  if (v>=1e9)  return (v/1e9).toFixed(3)+'B';
+  if (v>=1e6)  return (v/1e6).toFixed(3)+'M';
+  if (v>=1e3)  return (v/1e3).toFixed(3)+'K';
+  return v.toFixed(6);
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+function makeGradient(ctx, color) {
+  const g = ctx.createLinearGradient(0,0,0,180);
+  g.addColorStop(0, color+'55');
+  g.addColorStop(1, color+'05');
+  return g;
+}
+
+function renderChart(idx, labels, values) {
+  const charts = ASSET_CHARTS[currentAsset];
+  const c = charts[idx];
+  const id = 'chart_'+idx;
+  if (chartObjs[id]) chartObjs[id].destroy();
+  const canvas = $(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  chartObjs[id] = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label: c.label,
+        data: values,
+        borderColor: c.color,
+        backgroundColor: makeGradient(ctx, c.color),
+        borderWidth:1.5, pointRadius:0, pointHoverRadius:4,
+        pointBackgroundColor:c.color, fill:true, tension:0.4, spanGaps:true
+      }]
+    },
+    options:{
+      responsive:true, animation:false,
+      interaction:{intersect:false, mode:'index'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#080d1c', borderColor:'#1e2d55', borderWidth:1,
+          titleColor:'#b8cce8', bodyColor:c.color, padding:10,
+          titleFont:{family:'DM Mono',size:10}, bodyFont:{family:'DM Mono',size:11},
+          callbacks:{ label: ctx => '  '+c.label+': '+fmt(ctx.raw, c.decimals, c.decimals_display) }
+        }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(21,30,58,0.8)'}, ticks:{color:'#3a4e72', font:{family:'DM Mono',size:8}, maxTicksLimit:10, maxRotation:45} },
+        y:{ grid:{color:'rgba(21,30,58,0.8)'}, ticks:{color:'#3a4e72', font:{family:'DM Mono',size:8}, callback: v=>fmt(v,c.decimals,c.decimals_display)} }
+      }
+    }
+  });
+}
+
+function setPreset(start, end) {
+  $('startBlock').value = start;
+  $('endBlock').value = end || '';
+}
+
+
+function selectAsset(asset) {
+  currentAsset = asset;
+  chartObjs = {};
+  document.querySelectorAll('.asset-btn').forEach(b=>b.classList.remove('active'));
+  $('btn-'+asset).classList.add('active');
+  $('welcome').style.display = 'none';
+  $('dashboard').style.display = 'block';
+  buildChartCards();
+}
+
+async function loadCharts() {
+  if (!currentAsset) return;
+  const contract = CONTRACTS[currentAsset];
+  const charts = ASSET_CHARTS[currentAsset];
+  $('applyBtn').disabled = true;
+  setStatus('Getting current block...','loading');
+  setProgress(0);
+  try {
+    const latestHex = await rpc('eth_blockNumber',[]);
+    const latest = parseInt(latestHex, 16);
+    const start = Math.max(parseInt($('startBlock').value)||PULSECHAIN_GENESIS, PULSECHAIN_GENESIS);
+    const endVal = $('endBlock').value.trim();
+    const end = endVal ? parseInt(endVal) : latest;
+    const numPoints = parseInt($('stepSelect').value) || 50;
+    const step = Math.max(1, Math.floor((end - start) / (numPoints - 1)));
+
+    const blocks = [];
+    for (let i = 0; i < numPoints - 1; i++) blocks.push(start + (i * step));
+    blocks.push(end);
+
+    const total = blocks.length;
+    const labels = [];
+    const data = charts.map(()=>[]);
+
+    for (let i=0; i<total; i++) {
+      const b = blocks[i];
+      setProgress(Math.round((i/total)*100));
+      setStatus(`Fetching ${i+1} of ${total}...`,'loading');
+
+      const [blockData, ...results] = await Promise.all([
+        rpc('eth_getBlockByNumber', ['0x'+b.toString(16), false]),
+        ...charts.map(c => {
+          if (c.custom === 'price') return getTokenUSDPrice(c.pair, c.token0isPLS, b);
+          return callAt(contract, c.sel, b);
+        })
+      ]);
+
+      const ts = blockData ? parseInt(blockData.timestamp, 16) * 1000 : null;
+      const dateLabel = ts ? new Date(ts).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: '2-digit'
+      }) : b.toLocaleString();
+
+      labels.push(dateLabel);
+      results.forEach((r, idx) => {
+        const c = charts[idx];
+        if (c.custom === 'price') {
+          data[idx].push(r);
+        } else {
+          data[idx].push(toFloat(r, c.decimals));
+        }
+      });
+
+      if (i%5===0 || i===total-1) {
+        charts.forEach((_,idx) => renderChart(idx, [...labels], [...data[idx]]));
+      }
+      await sleep(80);
+    }
+
+    setProgress(100);
+    setStatus(`✓ ${total} data points loaded`,'done');
+  } catch(e) {
+    setStatus('Error: '+e.message,'error');
+  }
+  $('applyBtn').disabled = false;
+}
+</script>
+</body>
+</html>
